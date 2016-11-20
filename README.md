@@ -24,6 +24,10 @@ Or install it yourself as:
 
 ## Usage
 
+### Simple Example - Create a Building with an AddressChanged
+
+For more detailed examples see [Integration Spec](https://github.com/kylewelsby/sequares/blob/master/spec/integration_spec.rb)
+
 ```
 Address = Sequares::ValueObject.new(
   :line1,
@@ -75,7 +79,7 @@ end
 
 class BuildingPresenter
   extend Forwardable
-  attr_reader :building
+  attr_reader :entity
   def_delegators :@entity, :history, :name, :address
 
   def initialize(entity)
