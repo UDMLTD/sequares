@@ -38,7 +38,7 @@ module Sequares
         entity
       end
 
-      yield *entities if block_given?
+      yield(*entities) if block_given?
       entities
     ensure
       entities.each do |entity|

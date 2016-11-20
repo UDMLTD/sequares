@@ -4,7 +4,7 @@ module Sequares
     def initialize
       @store = Sequares::Store::Redis.new
       @use_cache = true
-      @hashids_salt = 'sequares'
+      @hashids_salt = "sequares"
       # @cache = ::Memcached.new('localhost:11211')
     end
   end
