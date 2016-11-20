@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/kylewelsby/sequares.svg?branch=master)](https://travis-ci.org/kylewelsby/sequares)
 # Sequares
 
 Sequares is CQRS as it sounds spoken fast.
