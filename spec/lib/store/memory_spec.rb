@@ -9,12 +9,47 @@ describe Sequares::Store::Memory do
 
   before :each do
     EventFoo = Sequares::Event.new(:name)
+    module EventNS
+      EventFoo = Sequares::Event.new(:name)
+    end
     class EntityFoo < Sequares::Entity
     end
   end
   after :each do
     Object.send(:remove_const, :EventFoo)
     Object.send(:remove_const, :EntityFoo)
+    Object.send(:remove_const, :EventNS)
+  end
+
+  describe '#filter_events' do
+    it "queries the history for given events" do
+      ev = EventFoo.new(name: "bar")
+
+      # assign
+      ent = double("Entity")
+      allow(ent).to receive(:uri).and_return("document/1")
+      allow(ent).to receive(:history).and_return([ev])
+
+      subject.save_history_for_aggregate(ent)
+
+      events = subject.filter_events(EventFoo)
+      # assert
+      expect(events.length).to be 1
+      expect(events.first).to eql ev
+    end
+
+    it 'queries the history by namespace' do
+      ev = EventNS::EventFoo.new(name: 'bar')
+      ent = double("Entity")
+      allow(ent).to receive(:uri).and_return("document/1")
+      allow(ent).to receive(:history).and_return([ev])
+
+      subject.save_history_for_aggregate(ent)
+
+      events = subject.filter_events(EventNS)
+      expect(events.length).to be 1
+      expect(events.first).to eql ev
+    end
   end
 
   describe ".cache_key_for" do
