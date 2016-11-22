@@ -1,9 +1,12 @@
 module Sequares
   class Entity
+    include Sequares::String
+
     AlreadyLocked = StandardError.new
-    attr_accessor :id, :history
+    attr_accessor :id, :history, :pending_events
     def initialize
       @history = []
+      @pending_events = []
     end
 
     class << self
@@ -36,6 +39,17 @@ module Sequares
     def execute(cmd)
       cmd.to_proc.call(self)
       self
+    end
+
+    def apply(event)
+      do_apply event
+      history << event
+      pending_events << event
+    end
+
+    def do_apply(event)
+      method_name = "on_#{event.key}"
+      method(method_name).call(event) if respond_to? method_name
     end
 
     def uri

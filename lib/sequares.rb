@@ -4,7 +4,10 @@ require "hashids"
 require "securerandom"
 require "sequares/version"
 require "sequares/configuration"
-require "sequares/helpers/structable"
+require "sequares/ext/string"
+require "sequares/event_bus/base"
+require "sequares/event_bus/memory"
+require "sequares/event_bus/redis"
 require "sequares/store/base"
 require "sequares/store/redis"
 require "sequares/store/memory"
@@ -16,9 +19,13 @@ require "sequares/value_object"
 
 module Sequares
   AlreadyLocked = StandardError.new
-  module Core; end
   class << self
     attr_writer :configuration
+
+    # def_delegators :@configuration, :store
+
+    # delegate :cache_key_for, to: :store
+
     def configuration
       @configuration ||= Configuration.new
     end
@@ -35,6 +42,7 @@ module Sequares
       entities = entities_array.each_slice(2).collect do |klass, id|
         entity = klass.load(id)
         configuration.store.lock(entity)
+        entity.pending_events = []
         entity
       end
 
@@ -44,6 +52,9 @@ module Sequares
       entities.each do |entity|
         configuration.store.save_history_for_aggregate(entity)
         configuration.store.unlock(entity)
+        entity.pending_events.each do |event|
+        configuration.event_bus.publish(event)
+        end
       end
       entities
     end

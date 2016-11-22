@@ -1,7 +1,9 @@
 [![Build Status](https://travis-ci.org/kylewelsby/sequares.svg?branch=master)](https://travis-ci.org/kylewelsby/sequares)
 # Sequares
 
-Sequares is CQRS as it sounds spoken fast.
+_Warning:  This project is Work In Progress and has not been officially released yet.  The defined specifics may change without notice_
+
+Sequares is CQRS as it sounds spoken fast. _se-qu-ar-es_
 
 Command-Query Responsibility Segregation (CQRS) with Event Sourcing.
 
