@@ -1,4 +1,38 @@
-require "spec_helper"
+module Commands
+  module User
+    class SetEmail < Sequares::Command.new(:email)
+      def to_proc
+        lambda do |entity|
+          events = Sequares.configuration.store
+                           .filter_events(::User::Event::EmailChanged)
+          has_email = events.any? do |event|
+            event.email == email
+          end
+          raise ::User::Error::EmailNotUnique if has_email
+          entity.history << ::User::Event::EmailChanged.new(to_h)
+        end
+      end
+    end
+  end
+end
+
+module Events
+  module User
+    EmailChanged = Sequares::Event.new(:email)
+  end
+end
+
+class User < Sequares::Entity
+  module Error
+    class EmailNotUnique < StandardError; end
+  end
+  module Cmd
+    include Commands::User
+  end
+  module Event
+    include Events::User
+  end
+end
 
 Address = Sequares::ValueObject.new(
   :line1,
@@ -196,85 +230,5 @@ class AreaPresenter
       building_name: building_name,
       building_id: building_id
     }
-  end
-end
-
-Sequares.configure do |config|
-  config.use_cache = false
-end
-
-describe "Intergration Example" do
-  let(:address) do
-    Address.new(
-      line1: "1600 Amphitheatre Parkway",
-      line2: nil,
-      locality: "San Francisco",
-      administrative_area: "CA",
-      postal_code: "94043",
-      country: "US"
-    )
-  end
-
-  before :each do
-    Timecop.freeze
-  end
-
-  after :each do
-    Timecop.return
-    Sequares.reset
-  end
-
-  it "adds name to history" do
-    resources = Sequares.with_lock([Building, nil]) do |building|
-      building
-        .execute(Building::SetName.new(name: "Google HQ"))
-        .execute(Building::SetAddress.new(address: address))
-    end
-
-    building = resources.first
-    expect(building.history.length).to be 2
-    expect(building.name).to eql "Google HQ"
-    expect(building.address.to_h).to eql address.to_h
-    expect(BuildingPresenter.new(building).to_h).to eql(
-      address: {
-        line1: "1600 Amphitheatre Parkway",
-        line2: nil,
-        locality: "San Francisco",
-        administrative_area: "CA",
-        postal_code: "94043",
-        country: "US"
-      },
-      created_at: Time.now.utc,
-      name: "Google HQ",
-      updated_at: Time.now.utc,
-      area_ids: []
-    )
-  end
-
-  it "adds a room to a building" do
-    resources = Sequares.with_lock([Building, nil, Area, nil]) do |building, area|
-      building.execute(Building::SetName.new(name: "Google HQ"))
-      area.execute(Area::SetType.new(type: "room"))
-      area.execute(Area::SetName.new(name: "Conference Room"))
-      area.execute(Area::AssignBuilding.new(building_id: building.id))
-      building.execute(Building::AddArea.new(area_id: area.id))
-    end
-    building = resources.first
-    area = resources[1]
-
-    expect(AreaPresenter.new(area).to_h).to eql(
-      name: "Conference Room",
-      type: "room",
-      building_name: "Google HQ",
-      building_id: building.id
-    )
-
-    expect(BuildingPresenter.new(building).to_h).to eql(
-      address: {},
-      created_at: Time.now.utc,
-      name: "Google HQ",
-      updated_at: Time.now.utc,
-      area_ids: [area.id]
-    )
   end
 end

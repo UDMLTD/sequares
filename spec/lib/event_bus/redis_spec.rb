@@ -1,10 +1,9 @@
 require "spec_helper"
 
 describe Sequares::EventBus::Redis do
-  let(:redis_mock) { double('Redis') }
+  let(:redis_mock) { double("Redis") }
   subject { described_class.new(redis_mock) }
   before :each do
-
     EventFoo = Sequares::Event.new(:name)
     class EntityFoo < Sequares::Entity; end
   end
@@ -35,7 +34,7 @@ describe Sequares::EventBus::Redis do
 
   describe "#start" do
     it "starts a redis process" do
-      sub_event = double('SubscriptionEvent')
+      sub_event = double("SubscriptionEvent")
       allow(sub_event).to receive(:message) do |&block|
         @message_block = block
       end
@@ -45,12 +44,11 @@ describe Sequares::EventBus::Redis do
       end
       block_body = lambda do |event|
       end
-      subject.subscribe('event_foo', &block_body)
+      subject.subscribe("event_foo", &block_body)
       expect(block_body).to receive(:call).with(event)
       subject.start
       @block.call(sub_event)
-      @message_block.call('channel1', event)
-
+      @message_block.call("channel1", event)
     end
   end
 end

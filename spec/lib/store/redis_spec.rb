@@ -2,23 +2,57 @@ require "spec_helper"
 
 describe Sequares::Store::Redis do
   before :each do
+    Sequares.configure do |config|
+      config.store = Sequares::Store::Redis.new
+    end
     EventFoo = Sequares::Event.new(:name)
+    module EventNS
+      EventFoo = Sequares::Event.new(:name)
+    end
     class EntityFoo < Sequares::Entity
     end
   end
   after :each do
     Object.send(:remove_const, :EventFoo)
     Object.send(:remove_const, :EntityFoo)
+    Object.send(:remove_const, :EventNS)
   end
 
-  describe ".cache_key_for" do
+  describe "#filter_events" do
+    let(:event) { EventFoo.new(name: "bar") }
+    let(:ns_event) { EventNS::EventFoo.new(name: "bar") }
+    let(:entity) { EntityFoo.load("1") }
+    before :each do
+      entity.history << event
+      subject.save_history_for_aggregate(entity)
+    end
+
+    it "queries the history for given events" do
+      events = subject.filter_events(EventFoo)
+      # assert
+      expect(events.length).to be 1
+      expect(events.first).to eql event
+    end
+
+    it "queries the history by namespace" do
+      entity.history << ns_event
+      subject.save_history_for_aggregate(entity)
+
+      events = subject.filter_events(EventNS)
+      # assert
+      expect(events.length).to be 1
+      expect(events.first).to eql ns_event
+    end
+  end
+
+  describe "#cache_key_for" do
     it "returns cache key for given entity" do
       key = subject.cache_key_for(EntityFoo, 1)
       expect(key).to eql("entityfoo/1|0")
     end
   end
 
-  describe ".cache_keys_for" do
+  describe "#cache_keys_for" do
     it "returns cache keys for given entities" do
       keys = subject.cache_keys_for([EntityFoo, 1, EntityFoo, 2])
       expect(keys).to eql(

@@ -15,14 +15,12 @@ module Sequares
 
       def filter_events(*klasses)
         events = []
-        @histories.each do |key, value|
+        @histories.each do |_key, value|
           events.concat(value)
         end
-        events.sort_by do |event|
-          event.occurred_at
-        end.select do |event|
+        events.sort_by(&:occurred_at).select do |event|
           event if klasses.any? do |klass|
-            event.is_a?(klass) || event.class.to_s.split('::').first.eql?(klass.to_s)
+            event.is_a?(klass) || event.class.to_s.split("::").first.eql?(klass.to_s)
           end
         end
       end

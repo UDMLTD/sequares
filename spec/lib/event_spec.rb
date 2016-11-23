@@ -10,7 +10,7 @@ describe Sequares::Event do
     Timecop.return
   end
 
-  subject {Foo.new(name: "hello world")}
+  subject { Foo.new(name: "hello world") }
 
   it "can create simple structs with occurred_at" do
     # subject = Foo.new(name: "hello world")
@@ -19,7 +19,7 @@ describe Sequares::Event do
   end
 
   describe "#key" do
-    it 'returns the class name as a underscore_key' do
+    it "returns the class name as a underscore_key" do
       expect(subject.key).to eql "foo"
     end
   end

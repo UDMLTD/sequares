@@ -1,13 +1,10 @@
 require "spec_helper"
 
 describe Sequares::Store::Memory do
-  describe "#histories" do
-    it "has histories" do
-      expect(subject.histories).to be_empty
-    end
-  end
-
   before :each do
+    Sequares.configure do |config|
+      config.store = Sequares::Store::Memory.new
+    end
     EventFoo = Sequares::Event.new(:name)
     module EventNS
       EventFoo = Sequares::Event.new(:name)
@@ -21,34 +18,30 @@ describe Sequares::Store::Memory do
     Object.send(:remove_const, :EventNS)
   end
 
-  describe '#filter_events' do
+  describe "#filter_events" do
+    let(:event) { EventFoo.new(name: "bar") }
+    let(:ns_event) { EventNS::EventFoo.new(name: "bar") }
+    let(:entity) { EntityFoo.load("1") }
+    before :each do
+      entity.history << event
+      subject.save_history_for_aggregate(entity)
+    end
+
     it "queries the history for given events" do
-      ev = EventFoo.new(name: "bar")
-
-      # assign
-      ent = double("Entity")
-      allow(ent).to receive(:uri).and_return("document/1")
-      allow(ent).to receive(:history).and_return([ev])
-
-      subject.save_history_for_aggregate(ent)
-
       events = subject.filter_events(EventFoo)
       # assert
       expect(events.length).to be 1
-      expect(events.first).to eql ev
+      expect(events.first).to eql event
     end
 
-    it 'queries the history by namespace' do
-      ev = EventNS::EventFoo.new(name: 'bar')
-      ent = double("Entity")
-      allow(ent).to receive(:uri).and_return("document/1")
-      allow(ent).to receive(:history).and_return([ev])
-
-      subject.save_history_for_aggregate(ent)
+    it "queries the history by namespace" do
+      entity.history << ns_event
+      subject.save_history_for_aggregate(entity)
 
       events = subject.filter_events(EventNS)
+      # assert
       expect(events.length).to be 1
-      expect(events.first).to eql ev
+      expect(events.first).to eql ns_event
     end
   end
 

@@ -53,7 +53,7 @@ module Sequares
         configuration.store.save_history_for_aggregate(entity)
         configuration.store.unlock(entity)
         entity.pending_events.each do |event|
-        configuration.event_bus.publish(event)
+          configuration.event_bus.publish(event)
         end
       end
       entities

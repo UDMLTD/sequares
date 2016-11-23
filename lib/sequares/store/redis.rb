@@ -10,6 +10,24 @@ module Sequares
         @connection = connection
       end
 
+      def filter_events(*klasses)
+        events = []
+        connection.keys.each do |key|
+          history_events = begin
+                             fetch_history_for_uri(key)
+                           rescue
+                             nil
+                           end
+          events.concat(history_events) if history_events && history_events.any?
+        end
+
+        events.sort_by(&:occurred_at).select do |event|
+          event if klasses.any? do |klass|
+            event.is_a?(klass) || event.class.to_s.split("::").first.eql?(klass.to_s)
+          end
+        end
+      end
+
       def reset
         connection.flushdb
       end
@@ -33,7 +51,11 @@ module Sequares
       end
 
       def fetch_history_for_aggregate(obj)
-        connection.lrange(obj.uri, 0, -1).to_a.collect do |hist|
+        fetch_history_for_uri(obj.uri)
+      end
+
+      def fetch_history_for_uri(uri)
+        connection.lrange(uri, 0, -1).to_a.collect do |hist|
           ::Marshal.load(hist)
         end
       end

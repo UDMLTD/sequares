@@ -13,12 +13,12 @@ describe Sequares::Entity do
 
   describe "#apply" do
     it "adds the event to this history" do
-      subject.apply(EventFoo.new(name: 'Hello World'))
+      subject.apply(EventFoo.new(name: "Hello World"))
       expect(subject.history.last).to be_a EventFoo
     end
 
     it "calls on_event_foo when applying event" do
-      event = EventFoo.new(name: 'Hello World')
+      event = EventFoo.new(name: "Hello World")
       expect(subject).to receive(:on_event_foo).with(event)
       subject.apply(event)
     end

@@ -15,7 +15,7 @@ describe Sequares::Configuration do
     end
 
     describe "#event_bus" do
-      it 'returns the default bus which is Redis' do
+      it "returns the default bus which is Redis" do
         expect(subject.event_bus).to be_a Sequares::EventBus::Redis
       end
     end
@@ -41,7 +41,7 @@ describe Sequares::Configuration do
       expect(Sequares.configuration.use_cache).to be_falsy
     end
 
-    it 'sets the event_bus to Memory' do
+    it "sets the event_bus to Memory" do
       expect(Sequares.configuration.event_bus).to be_a Sequares::EventBus::Memory
     end
   end
