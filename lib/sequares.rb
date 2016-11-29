@@ -38,6 +38,10 @@ module Sequares
       @configuration = Configuration.new
     end
 
+    def filter_events(*klasses)
+      configuration.store(klasses)
+    end
+
     def with_lock(entities_array)
       entities = entities_array.each_slice(2).collect do |klass, id|
         entity = klass.load(id)

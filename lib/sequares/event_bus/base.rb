@@ -8,8 +8,8 @@ module Sequares
 
       def publish(event); end
 
-      def subscribe(event_key, &handler)
-        @subscriptions[event_key] << handler
+      def subscribe(event_key, &block)
+        @subscriptions[event_key] << block if block_given?
       end
 
       def perge; end

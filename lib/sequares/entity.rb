@@ -42,14 +42,15 @@ module Sequares
     end
 
     def apply(event)
+      event.entity_id = id
+      event.entity_klass = self.class.name
       do_apply event
       history << event
       pending_events << event
     end
 
     def do_apply(event)
-      method_name = "on_#{event.key}"
-      method(method_name).call(event) if respond_to? method_name
+      Sequares.configuration.event_bus.publish(event)
     end
 
     def uri

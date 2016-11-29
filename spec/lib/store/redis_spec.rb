@@ -23,7 +23,7 @@ describe Sequares::Store::Redis do
     let(:ns_event) { EventNS::EventFoo.new(name: "bar") }
     let(:entity) { EntityFoo.load("1") }
     before :each do
-      entity.history << event
+      entity.apply event
       subject.save_history_for_aggregate(entity)
     end
 
@@ -35,7 +35,7 @@ describe Sequares::Store::Redis do
     end
 
     it "queries the history by namespace" do
-      entity.history << ns_event
+      entity.apply ns_event
       subject.save_history_for_aggregate(entity)
 
       events = subject.filter_events(EventNS)

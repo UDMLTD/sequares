@@ -13,7 +13,6 @@ describe Sequares::Event do
   subject { Foo.new(name: "hello world") }
 
   it "can create simple structs with occurred_at" do
-    # subject = Foo.new(name: "hello world")
     expect(subject.name).to eql("hello world")
     expect(subject.occurred_at).to eql(Time.now.utc)
   end

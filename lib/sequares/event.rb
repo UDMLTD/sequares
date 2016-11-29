@@ -24,6 +24,7 @@ module Sequares
 
       klass = Class.new self do
         attr_accessor(*attr_sym_names)
+        attr_accessor :entity_id, :entity_klass
 
         def self.new(**args, &block)
           # args is a hash of key-value pairs representing the keyword arguments
