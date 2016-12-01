@@ -7,5 +7,5 @@ describe Sequares::Store::Redis do
     end
   end
 
-  it_behaves_like 'store'
+  it_behaves_like "store"
 end

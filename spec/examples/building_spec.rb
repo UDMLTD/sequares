@@ -29,7 +29,7 @@ describe "Example / Building" do
   end
 
   after :each do
-    EmailAddressesInUseService.instance.instance_variable_set('@emails_in_use', [])
+    EmailAddressesInUseService.instance.instance_variable_set("@emails_in_use", [])
     Timecop.return
     Sequares.reset
   end

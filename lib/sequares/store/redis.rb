@@ -44,6 +44,7 @@ module Sequares
           ::Marshal.dump(c)
         end
         connection.multi do
+          # NOTE use rpush instead of del
           connection.sadd obj.class.name.to_s.downcase, obj.uri
           connection.del obj.uri
           marshaled_objects.each do |mobj|

@@ -50,7 +50,7 @@ module Sequares
 
       def unsaved_history(obj)
         exisiting_history = fetch_history_for_aggregate(obj)
-        obj.history.slice(Range.new(exisiting_history.length,-1))
+        obj.history.slice(Range.new(exisiting_history.length, -1))
       end
 
       def lock(obj)

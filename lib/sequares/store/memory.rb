@@ -1,5 +1,5 @@
-require 'byebug'
-require 'active_support/inflector'
+require "byebug"
+require "active_support/inflector"
 module Sequares
   module Store
     class Memory < Base
@@ -23,18 +23,16 @@ module Sequares
       end
 
       def filter_events(*klasses)
-        events = Hash.new
+        events = {}
         all_histories.each do |event, entity|
-          if klass_in_klasses?(event, klasses)
-            events[entity] = event
-          end
+          events[entity] = event if klass_in_klasses?(event, klasses)
         end
         events
       end
 
       def cache_key_for(klass, id)
         inst = klass.with_history(id, [])
-        [inst.uri, histories[inst.uri].length].join('#')
+        [inst.uri, histories[inst.uri].length].join("#")
       end
 
       def save_history_for_aggregate(obj)

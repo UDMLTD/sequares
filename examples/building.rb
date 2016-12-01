@@ -1,5 +1,5 @@
-require 'singleton'
-require 'forwardable'
+require "singleton"
+require "forwardable"
 
 class EmailAddressesInUseService
   include Singleton
@@ -23,24 +23,21 @@ class EmailAddressesInUseService
   end
 
   private def _handle_message(entity, event)
-
     entity_set = User.load(entity.id)
     dead_email = entity_set.history.select do |i|
       i.occurred_at < event.occurred_at
     end.last
 
-    emails_in_use.delete?({user_id: entity.id, email: dead_email.email}) if dead_email
-    emails_in_use << {user_id: entity.id, email: event.email}
-    last_updated_at = event.occurred_at
+    emails_in_use.delete?(user_id: entity.id, email: dead_email.email) if dead_email
+    emails_in_use << { user_id: entity.id, email: event.email }
+    @last_updated_at = event.occurred_at
   end
 
   def warmup
     synchronize do
       entity_event_pairs = Sequares.filter_events(::User::Event::EmailChanged)
       entity_event_pairs.each do |entity, event|
-        if event.occurred_at > last_updated_at
-          _handle_message(entity, event)
-        end
+        _handle_message(entity, event) if event.occurred_at > last_updated_at
       end
       # write to a cache here
     end
@@ -52,7 +49,6 @@ class EmailAddressesInUseService
     end
   end
 end
-
 
 class User < Sequares::Entity
   module Error
@@ -73,7 +69,6 @@ class User < Sequares::Entity
     EmailChanged = Sequares::Event.new(:email)
   end
 end
-
 
 Address = Sequares::ValueObject.new(
   :line1,

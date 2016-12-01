@@ -24,7 +24,7 @@ module Sequares
       end
 
       def uri(id)
-        ActiveSupport::Inflector.underscore([name, id].join('|'))
+        ActiveSupport::Inflector.underscore([name, id].join("|"))
       end
 
       def with_history(id, history)
@@ -44,7 +44,7 @@ module Sequares
     end
 
     def uri
-      ActiveSupport::Inflector.underscore([self.class.name, id].join('|'))
+      ActiveSupport::Inflector.underscore([self.class.name, id].join("|"))
     end
   end
 end

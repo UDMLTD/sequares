@@ -27,7 +27,7 @@ describe Sequares::Store::WithCallback do
 
   describe "#save_history_for_aggregate" do
     it "should call callback when saving" do
-      callback = double('callback')
+      callback = double("callback")
       subject.add_callback(callback)
       expect(callback).to receive(:call).with(instance_of(EntityFoo), event)
 
