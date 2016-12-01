@@ -1,41 +1,51 @@
+require 'byebug'
+require 'active_support/inflector'
 module Sequares
   module Store
     class Memory < Base
       class << self
         def cache_key_for(klass, id)
           inst = klass.with_history(id, [])
-          "#{inst.uri}|#{histories}"
+          "#{inst.uri}|#{histories.length}"
         end
       end
-      attr_accessor :histories, :locks
+      attr_accessor :histories, :locks, :all_histories
       def initialize
+        @all_histories = {}
         @histories = Hash.new { |hash, key| hash[key] = [] }
         @locks = Hash.new { |hash, key| hash[key] = Mutex.new }
       end
 
-      def filter_events(*klasses)
-        events = []
-        @histories.each do |_key, value|
-          events.concat(value)
+      def klass_in_klasses?(needle, klasses)
+        klasses.any? do |klass|
+          needle.is_a?(klass) || needle.class.to_s.split("::").first.eql?(klass.to_s)
         end
-        events.sort_by(&:occurred_at).select do |event|
-          event if klasses.any? do |klass|
-            event.is_a?(klass) || event.class.to_s.split("::").first.eql?(klass.to_s)
+      end
+
+      def filter_events(*klasses)
+        events = Hash.new
+        all_histories.each do |event, entity|
+          if klass_in_klasses?(event, klasses)
+            events[entity] = event
           end
         end
+        events
       end
 
       def cache_key_for(klass, id)
         inst = klass.with_history(id, [])
-        "#{inst.uri}|#{histories[inst.uri].length}"
+        [inst.uri, histories[inst.uri].length].join('#')
       end
 
       def save_history_for_aggregate(obj)
-        histories[obj.uri] = obj.history
+        histories[obj.uri].concat(unsaved_history(obj))
+        obj.history.each do |event|
+          all_histories[event] = obj.class.new(obj.id)
+        end
       end
 
       def fetch_history_for_aggregate(obj)
-        histories[obj.uri]
+        histories[obj.uri].clone
       end
 
       def lock(obj)

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 require "digest/md5"
 require "redis"
+require "active_support/inflector"
+
 module Sequares
   module Store
     class Redis < Base
@@ -11,21 +13,21 @@ module Sequares
       end
 
       def filter_events(*klasses)
-        events = []
+        entity_event_pairs = {}
         connection.keys.each do |key|
-          history_events = begin
-                             fetch_history_for_uri(key)
-                           rescue
-                             nil
-                           end
-          events.concat(history_events) if history_events && history_events.any?
-        end
+          next unless connection.type(key) == "list"
+          events = connection.lrange(key, 0, -1).to_a.collect do |hist|
+            ::Marshal.load(hist)
+          end
 
-        events.sort_by(&:occurred_at).select do |event|
-          event if klasses.any? do |klass|
-            event.is_a?(klass) || event.class.to_s.split("::").first.eql?(klass.to_s)
+          events.each do |event|
+            next unless klass_in_klasses?(event, klasses)
+            key_split = key.split("|")
+            klass = ActiveSupport::Inflector.classify(key_split.first).constantize.new(key_split.last)
+            entity_event_pairs[klass] = event
           end
         end
+        entity_event_pairs
       end
 
       def reset
@@ -34,7 +36,7 @@ module Sequares
 
       def cache_key_for(klass, id)
         inst = klass.with_history(id, [])
-        "#{inst.uri}|#{connection.llen(inst.uri)}"
+        "#{inst.uri}##{connection.llen(inst.uri)}"
       end
 
       def save_history_for_aggregate(obj)

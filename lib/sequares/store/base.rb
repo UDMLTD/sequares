@@ -14,6 +14,12 @@ module Sequares
       def initialize
       end
 
+      def klass_in_klasses?(needle, klasses)
+        klasses.any? do |klass|
+          needle.is_a?(klass) || needle.class.to_s.split("::").first.eql?(klass.to_s)
+        end
+      end
+
       def cache_keys_for(keypairs)
         keypairs.each_slice(2).collect do |klass, id|
           cache_key_for(klass, id)
@@ -42,6 +48,11 @@ module Sequares
         # noop
       end
 
+      def unsaved_history(obj)
+        exisiting_history = fetch_history_for_aggregate(obj)
+        obj.history.slice(Range.new(exisiting_history.length,-1))
+      end
+
       def lock(obj)
         # noop
       end
@@ -49,6 +60,11 @@ module Sequares
       def unlock(obj)
         # noop
       end
+    end
+
+    def cache_key_for(klass, id)
+      inst = klass.with_history(id, [])
+      [inst.uri, histories[inst.uri].length].join("#")
     end
   end
 end

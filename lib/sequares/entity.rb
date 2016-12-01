@@ -3,10 +3,10 @@ module Sequares
     include Sequares::String
 
     AlreadyLocked = StandardError.new
-    attr_accessor :id, :history, :pending_events
-    def initialize
+    attr_accessor :id, :history
+    def initialize(id=nil)
       @history = []
-      @pending_events = []
+      @id = id
     end
 
     class << self
@@ -17,20 +17,18 @@ module Sequares
           id = hashids.encode_hex(SecureRandom.hex)
         end
 
-        obj = new
-        obj.id = id
+        obj = new(id)
         history = Sequares.configuration.store.fetch_history_for_aggregate(obj)
 
         with_history(id, history)
       end
 
       def uri(id)
-        [name.downcase, id].join("/")
+        ActiveSupport::Inflector.underscore([name, id].join('|'))
       end
 
       def with_history(id, history)
-        ent = new
-        ent.id = id
+        ent = new(id)
         ent.history = history
         ent
       end
@@ -42,19 +40,11 @@ module Sequares
     end
 
     def apply(event)
-      event.entity_id = id
-      event.entity_klass = self.class.name
-      do_apply event
       history << event
-      pending_events << event
-    end
-
-    def do_apply(event)
-      Sequares.configuration.event_bus.publish(event)
     end
 
     def uri
-      [self.class.name.downcase, id].join("/")
+      ActiveSupport::Inflector.underscore([self.class.name, id].join('|'))
     end
   end
 end

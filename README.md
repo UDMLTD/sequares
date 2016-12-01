@@ -8,6 +8,12 @@ Sequares is CQRS as it sounds spoken fast. _se-qu-ar-es_
 Command-Query Responsibility Segregation (CQRS) with Event Sourcing.
 
 
+## Todo
+
+- event_slice - a processed event e.g. all emails in array,  has to catch up with live. so at event 700 and has to caatchup historeis 800. (maybe its a saga)
+- replay history
+- projection is a ideal case
+
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -30,82 +36,6 @@ Or install it yourself as:
 
 For more detailed examples see [Integration Spec](https://github.com/kylewelsby/sequares/blob/master/spec/integration_spec.rb)
 
-```
-Address = Sequares::ValueObject.new(
-  :line1,
-  :line2,
-  :locality,
-  :administrative_area,
-  :postal_code,
-  :country
-)
-
-module BuildingCommands
-  class SetName < Sequares::Command.new(:name)
-    def to_proc
-      lambda do |entity|
-        entity.history << Building::Event::NameChanged.new(to_h)
-      end
-    end
-  end
-
-  class SetAddress < Sequares::Command.new(:address)
-    def to_proc
-      lambda do |ent|
-        ent.history << Building::Event::AddressChanged.new(to_h)
-      end
-    end
-  end
-end
-
-class Building < Sequares::Entity
-  include BuildingCommands
-
-  module Event
-    NameChanged = Sequares::Event.new(:name)
-    AddressChanged = Sequares::Event.new(:address)
-  end
-
-  def name
-    history.select do |i|
-      i.is_a? Event::NameChanged
-    end.last.name
-  end
-
-  def address
-    history.select do |i|
-      i.is_a? Event::AddressChanged
-    end.last.address
-  end
-end
-
-class BuildingPresenter
-  extend Forwardable
-  attr_reader :entity
-  def_delegators :@entity, :history, :name, :address
-
-  def initialize(entity)
-    @entity = entity
-  end
-
-  def created_at
-    history.first.occurred_at
-  end
-
-  def updated_at
-    history.last.occurred_at
-  end
-
-  def to_h
-    {
-      name: name,
-      created_at: created_at,
-      updated_at: updated_at,
-      address: address.to_h
-    }
-  end
-end
-```
 
 ## Development
 

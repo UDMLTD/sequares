@@ -16,11 +16,20 @@ describe "Example / Building" do
   before :each do
     Sequares.configure do |config|
       config.store = Sequares::Store::Memory.new
+
+      config.store = Sequares::Store::WithCallback.new(config.store)
+      config.store.add_callback(lambda do |entity, event|
+        if event.is_a?(::User::Event::EmailChanged)
+          ::EmailAddressesInUseService.instance.handle_message(entity, event)
+        end
+      end)
     end
+
     Timecop.freeze
   end
 
   after :each do
+    EmailAddressesInUseService.instance.instance_variable_set('@emails_in_use', [])
     Timecop.return
     Sequares.reset
   end

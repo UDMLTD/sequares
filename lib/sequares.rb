@@ -1,3 +1,4 @@
+require "delegate"
 require "time"
 require "forwardable"
 require "hashids"
@@ -11,6 +12,7 @@ require "sequares/event_bus/redis"
 require "sequares/store/base"
 require "sequares/store/redis"
 require "sequares/store/memory"
+require "sequares/store/with_callback"
 require "sequares/command"
 require "sequares/entity"
 require "sequares/error"
@@ -39,14 +41,13 @@ module Sequares
     end
 
     def filter_events(*klasses)
-      configuration.store(klasses)
+      @configuration.store.filter_events(klasses)
     end
 
     def with_lock(entities_array)
       entities = entities_array.each_slice(2).collect do |klass, id|
         entity = klass.load(id)
         configuration.store.lock(entity)
-        entity.pending_events = []
         entity
       end
 
@@ -56,9 +57,6 @@ module Sequares
       entities.each do |entity|
         configuration.store.save_history_for_aggregate(entity)
         configuration.store.unlock(entity)
-        entity.pending_events.each do |event|
-          configuration.event_bus.publish(event)
-        end
       end
       entities
     end

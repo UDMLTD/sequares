@@ -1,38 +1,79 @@
-module Commands
-  module User
-    class SetEmail < Sequares::Command.new(:email)
-      def to_proc
-        lambda do |entity|
-          events = Sequares.configuration.store
-                           .filter_events(::User::Event::EmailChanged)
-          has_email = events.any? do |event|
-            event.email == email
-          end
-          raise ::User::Error::EmailNotUnique if has_email
-          entity.history << ::User::Event::EmailChanged.new(to_h)
+require 'singleton'
+require 'forwardable'
+
+class EmailAddressesInUseService
+  include Singleton
+  extend Forwardable
+
+  def_delegators :@mutex_instance, :synchronize
+  attr_accessor :last_updated_at, :emails_in_use
+
+  def initialize
+    @mutex_instance = Mutex.new
+    @last_updated_at ||= 0
+    @emails_in_use ||= Set.new
+  end
+
+  def handle_message(entity, event)
+    synchronize do
+      _handle_message(entity, event)
+      # write to a cache here
+    end
+    # warmup
+  end
+
+  private def _handle_message(entity, event)
+
+    entity_set = User.load(entity.id)
+    dead_email = entity_set.history.select do |i|
+      i.occurred_at < event.occurred_at
+    end.last
+
+    emails_in_use.delete?({user_id: entity.id, email: dead_email.email}) if dead_email
+    emails_in_use << {user_id: entity.id, email: event.email}
+    last_updated_at = event.occurred_at
+  end
+
+  def warmup
+    synchronize do
+      entity_event_pairs = Sequares.filter_events(::User::Event::EmailChanged)
+      entity_event_pairs.each do |entity, event|
+        if event.occurred_at > last_updated_at
+          _handle_message(entity, event)
         end
       end
+      # write to a cache here
+    end
+  end
+
+  def has_email?(email)
+    emails_in_use.any? do |item|
+      item[:email].eql? email
     end
   end
 end
 
-module Events
-  module User
-    EmailChanged = Sequares::Event.new(:email)
-  end
-end
 
 class User < Sequares::Entity
   module Error
     class EmailNotUnique < StandardError; end
   end
   module Cmd
-    include Commands::User
+    class SetEmail < Sequares::Command.new(:email)
+      def to_proc
+        lambda do |entity|
+          puts EmailAddressesInUseService.instance.has_email?(email)
+          raise ::User::Error::EmailNotUnique if EmailAddressesInUseService.instance.has_email?(email)
+          entity.history << ::User::Event::EmailChanged.new(to_h)
+        end
+      end
+    end
   end
   module Event
-    include Events::User
+    EmailChanged = Sequares::Event.new(:email)
   end
 end
+
 
 Address = Sequares::ValueObject.new(
   :line1,
