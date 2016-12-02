@@ -15,15 +15,15 @@ describe "Example / Building" do
 
   before :each do
     Sequares.configure do |config|
-      config.store = Sequares::Store::Memory.new
-
-      config.store = Sequares::Store::WithCallback.new(config.store)
-      config.store.add_callback(lambda do |entity, event|
-        if event.is_a?(::User::Event::EmailChanged)
-          ::EmailAddressesInUseService.instance.handle_message(entity, event)
-        end
-      end)
+      config.repository = Sequares::Repository.new(Sequares::Backend::Memory.new)
+      config.repository = Sequares::RepositoryWithCallback.new(config.repository)
     end
+
+    Sequares.repository.add_callback(lambda do |entity, event|
+      if event.is_a?(::User::Event::EmailChanged)
+        ::EmailAddressesInUseService.instance.handle_message(entity, event)
+      end
+    end)
 
     Timecop.freeze
   end
@@ -35,7 +35,7 @@ describe "Example / Building" do
   end
 
   it "adds name to history" do
-    resources = Sequares.with_lock([Building, nil]) do |building|
+    resources = Sequares.with_entities([Building, nil]) do |building|
       building
         .execute(Building::SetName.new(name: "Google HQ"))
         .execute(Building::SetAddress.new(address: address))
@@ -62,7 +62,7 @@ describe "Example / Building" do
   end
 
   it "adds a room to a building" do
-    resources = Sequares.with_lock([Building, nil, Area, nil]) do |building, area|
+    resources = Sequares.with_entities([Building, nil, Area, nil]) do |building, area|
       building.execute(Building::SetName.new(name: "Google HQ"))
       area.execute(Area::SetType.new(type: "room"))
       area.execute(Area::SetName.new(name: "Conference Room"))
@@ -89,7 +89,7 @@ describe "Example / Building" do
   end
 
   xit "finds buildings by event" do
-    Sequares.with_lock([User, 1]) do |user|
+    Sequares.with_entities([User, 1]) do |user|
       user.execute(
         User::Cmd::SetEmail.new(email: "test@example.com")
       )
@@ -101,14 +101,14 @@ describe "Example / Building" do
   end
 
   it "doesnt allow the email to be added again" do
-    resources = Sequares.with_lock([User, 1]) do |user|
+    resources = Sequares.with_entities([User, 1]) do |user|
       user.execute(
         User::Cmd::SetEmail.new(email: "test@example.com")
       )
     end
 
     expect do
-      resources = Sequares.with_lock([User, 2]) do |user|
+      resources = Sequares.with_entities([User, 2]) do |user|
         user.execute(
           User::Cmd::SetEmail.new(email: "test@example.com")
         )
@@ -116,7 +116,7 @@ describe "Example / Building" do
     end.to raise_error User::Error::EmailNotUnique
 
     expect do
-      resources = Sequares.with_lock([User, 2]) do |user|
+      resources = Sequares.with_entities([User, 2]) do |user|
         user.execute(
           User::Cmd::SetEmail.new(email: "test123@example.com")
         )

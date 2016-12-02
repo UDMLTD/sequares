@@ -1,3 +1,4 @@
+require "byebug"
 require "singleton"
 require "forwardable"
 
@@ -23,7 +24,7 @@ class EmailAddressesInUseService
   end
 
   private def _handle_message(entity, event)
-    entity_set = User.load(entity.id)
+    entity_set = Sequares.repository.load(User, entity.id)
     dead_email = entity_set.history.select do |i|
       i.occurred_at < event.occurred_at
     end.last
@@ -58,7 +59,6 @@ class User < Sequares::Entity
     class SetEmail < Sequares::Command.new(:email)
       def to_proc
         lambda do |entity|
-          puts EmailAddressesInUseService.instance.has_email?(email)
           raise ::User::Error::EmailNotUnique if EmailAddressesInUseService.instance.has_email?(email)
           entity.history << ::User::Event::EmailChanged.new(to_h)
         end
@@ -124,14 +124,14 @@ class Building < Sequares::Entity
   end
 
   def name
-    obj = history.select do |i|
+    obj = history.dup.select do |i|
       i.is_a? Event::NameChanged
     end.last
     obj.name if obj
   end
 
   def address
-    obj = history.select do |i|
+    obj = history.dup.select do |i|
       i.is_a? Event::AddressChanged
     end.last
     obj.address if obj
@@ -156,10 +156,11 @@ class BuildingPresenter
   end
 
   def area_ids
-    ids = history.select do |i|
+    local_history = history.dup
+    ids = local_history.select do |i|
       i.is_a? Building::Event::AreaAdded
     end.collect(&:area_id)
-    removed_ids = history.select do |i|
+    removed_ids = local_history.select do |i|
       i.is_a? Building::Event::AreaRemoved
     end.collect(&:area_id)
     ids - removed_ids
@@ -230,33 +231,35 @@ class AreaPresenter
   end
 
   def name
-    obj = history.select do |i|
+    obj = history.dup.select do |i|
       i.is_a? Area::Event::NameChanged
     end.last
     obj.name if obj
   end
 
   def building
-    @building ||= Building.load(building_id)
+    @building ||= Sequares.repository.load(Building, building_id)
   end
 
   def building_id
-    obj = history.select do |i|
+    obj = history.dup.select do |i|
       i.is_a? Area::Event::BuildingAssignment
     end.last
     obj.building_id if obj
   end
 
   def building_name
-    building.history.select do |i|
+    obj = building.history.dup.select do |i|
       i.is_a? Building::Event::NameChanged
-    end.last.name
+    end.last
+    obj.name if obj
   end
 
   def area_type
-    history.select do |i|
+    obj = history.dup.select do |i|
       i.is_a? Area::Event::TypeChanged
-    end.last.type
+    end.last
+    obj.type if obj
   end
 
   def to_h

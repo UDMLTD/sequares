@@ -1,7 +1,5 @@
 module Sequares
   class Event
-    include Sequares::String
-
     class << self
       alias subclass_new new
     end
@@ -73,9 +71,10 @@ module Sequares
       return false if self.class != other.class
       to_h.eql?(other.to_h)
     end
+    alias == eql?
 
     def key
-      underscore(self.class.name.to_s)
+      ActiveSupport::Inflector.underscore(self.class.name.to_s)
     end
 
     private def _attrs # :nodoc:

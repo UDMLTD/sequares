@@ -15,13 +15,13 @@ RSpec.shared_examples "store" do
 
   let(:event) { EventFoo.new(name: "bar") }
   let(:ns_event) { EventNS::EventFoo.new(name: "bar") }
-  let(:entity) { EntityFoo.load("1") }
+  let(:entity) { Sequares.repository.load(EntityFoo, "1") }
 
   describe "#filter_events" do
     before :each do
       entity.history << event
       entity.history << ns_event
-      subject.save_history_for_aggregate(entity)
+      subject.save_history_for(entity)
     end
 
     it "queries the history for given events" do
@@ -35,8 +35,6 @@ RSpec.shared_examples "store" do
     end
 
     it "queries the history by namespace" do
-      subject.save_history_for_aggregate(entity)
-
       events_pair = subject.filter_events(EventNS)
       # assert
       expect(events_pair.length).to be 1
@@ -47,14 +45,14 @@ RSpec.shared_examples "store" do
     end
   end
 
-  describe ".cache_key_for" do
+  xdescribe ".cache_key_for" do
     it "returns cache key for given entity" do
       key = subject.cache_key_for(EntityFoo, 1)
       expect(key).to eql("entity_foo|1#0")
     end
   end
 
-  describe ".cache_keys_for" do
+  xdescribe ".cache_keys_for" do
     it "returns cache keys for given entities" do
       keys = subject.cache_keys_for([EntityFoo, 1, EntityFoo, 2])
       expect(keys).to eql(
@@ -66,14 +64,14 @@ RSpec.shared_examples "store" do
     end
   end
 
-  describe ".etag_for" do
+  xdescribe ".etag_for" do
     it "returns the etag_for given entity" do
       etag = subject.etag_for(EntityFoo, 1)
       expect(etag).to eql "23514ed174bd71d0664afc966f238b95"
     end
   end
 
-  describe ".etags_for" do
+  xdescribe ".etags_for" do
     it "returns etag strings for given entities" do
       etags = subject.etags_for([EntityFoo, 1, EntityFoo, 2])
       expect(etags).to eql(
@@ -85,43 +83,51 @@ RSpec.shared_examples "store" do
     end
   end
 
-  describe "#save_history_for_aggregate" do
+  describe "#save_history_for" do
     it "writes to history" do
       entity.history << event
-      subject.save_history_for_aggregate(entity)
+      subject.save_history_for(entity)
 
-      expect(subject.fetch_history_for_aggregate(entity).last).to be_a EventFoo
-      expect(subject.fetch_history_for_aggregate(entity).last).to eql event
+      expect(subject.for_entity(entity).last).to be_a EventFoo
+      expect(subject.for_entity(entity).last).to eql event
     end
   end
 
-  describe "#lock" do
-    it "raises thread error" do
-      store = described_class.new
-      ent = double("Entity")
-      allow(ent).to receive(:uri).and_return("document/1")
-      store.lock(ent)
-      expect do
-        Thread.new do
-          store.lock(ent)
-        end.join
-      end.to raise_error ::Sequares::Entity::AlreadyLocked
+  describe "#history.length" do
+    it "returns the length of the history includeing uncommitted history" do
+      new_instance = subject.load(entity.class, entity.id)
+
+      expect(new_instance.history.length).to eql 0
+      new_instance.history << event
+      expect(new_instance.history.length).to eql 1
     end
   end
 
-  describe "#unsaved_history" do
-    it "returns an empty array" do
-      expect(subject.unsaved_history(entity)).to be_a Array
-    end
-
-    it "returns a range of array events" do
-      new_event = EventFoo.new(name: "bar")
+  describe "#history.uncommitted" do
+    it "has committed and uncommitted history" do
       entity.history << event
-      expect(subject.unsaved_history(entity)).to include event
-      subject.save_history_for_aggregate(entity)
-      entity.history << new_event
-      expect(subject.unsaved_history(entity)).not_to include event
-      expect(subject.unsaved_history(entity)).to include new_event
+      subject.save_history_for(entity)
+      new_instance = subject.load(entity.class, entity.id)
+      new_instance.history << ns_event
+
+      expect(new_instance.history.length).to eql 2
+      expect(new_instance.history).to include event
+      expect(new_instance.history).to include ns_event
+    end
+
+    it "adds history to store" do
+      entity.history << event
+      subject.save_history_for(entity)
+
+      new_instance = subject.load(entity.class, entity.id)
+      new_instance.history << ns_event
+      subject.save_history_for(new_instance)
+
+      assert_instance = subject.load(entity.class, entity.id)
+
+      expect(assert_instance.history.length).to eql 2
+      expect(assert_instance.history).to include event
+      expect(assert_instance.history).to include ns_event
     end
   end
 end

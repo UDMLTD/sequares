@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe Sequares::EventBus::Memory do
+xdescribe Sequares::EventBus::Memory do
   before :each do
     EventFoo = Sequares::Event.new(:name)
     class EntityFoo < Sequares::Entity; end

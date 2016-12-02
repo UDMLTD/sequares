@@ -7,6 +7,11 @@ RSpec.configure do |config|
   config.order = "random"
 
   config.before :each do
-    Sequares.configuration.store.reset
+    Sequares.configure do |sequares_config|
+      sequares_config.repository = Sequares::Repository.new(Sequares::Backend::Memory.new)
+    end
+  end
+  config.after :each do
+    Sequares.repository.reset
   end
 end

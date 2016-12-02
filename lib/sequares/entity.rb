@@ -1,35 +1,27 @@
 module Sequares
   class Entity
-    include Sequares::String
-
     AlreadyLocked = StandardError.new
-    attr_accessor :id, :history
+    attr_accessor :id
+    attr_reader :history
     def initialize(id=nil)
-      @history = []
+      unless id
+        hashids = Hashids.new(Sequares.configuration.hashids_salt)
+        id = hashids.encode_hex(SecureRandom.hex)
+      end
       @id = id
+      @history = HistoryPage.new(Redis.new, "lookups:#{cache_key}")
     end
 
     class << self
-      def load(id=nil)
-        # Make a ID if not provided one
-        unless id
-          hashids = Hashids.new(Sequares.configuration.hashids_salt)
-          id = hashids.encode_hex(SecureRandom.hex)
-        end
-
-        obj = new(id)
-        history = Sequares.configuration.store.fetch_history_for_aggregate(obj)
-
-        with_history(id, history)
-      end
-
       def uri(id)
         ActiveSupport::Inflector.underscore([name, id].join("|"))
       end
 
       def with_history(id, history)
         ent = new(id)
-        ent.history = history
+        history.each do |event|
+          ent.history << event
+        end
         ent
       end
     end
@@ -39,12 +31,12 @@ module Sequares
       self
     end
 
-    def apply(event)
-      history << event
-    end
-
     def uri
       ActiveSupport::Inflector.underscore([self.class.name, id].join("|"))
+    end
+
+    def cache_key
+      "#{self.class.name}@#{id}"
     end
   end
 end

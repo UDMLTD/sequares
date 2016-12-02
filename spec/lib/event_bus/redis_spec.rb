@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe Sequares::EventBus::Redis do
+xdescribe Sequares::EventBus::Redis do
   let(:redis_mock) { double("Redis") }
   subject { described_class.new(redis_mock) }
   before :each do
