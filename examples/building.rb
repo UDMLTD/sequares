@@ -1,4 +1,3 @@
-require "byebug"
 require "singleton"
 require "forwardable"
 

@@ -1,4 +1,3 @@
-require "byebug"
 module Sequares
   module Backend
     class Memory
