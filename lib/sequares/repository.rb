@@ -83,7 +83,7 @@ module Sequares
     def filter_events(*klasses)
       out = {}
       klasses.each do |klass|
-        for_event_klass(klass).each_page do |event|
+        for_event_klass(klass).each do |event|
           out[entity_for_event(event)] = event if klass_in_klasses?(event, klasses)
         end
       end

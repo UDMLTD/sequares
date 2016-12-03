@@ -123,14 +123,14 @@ class Building < Sequares::Entity
   end
 
   def name
-    obj = history.dup.select do |i|
+    obj = history.select do |i|
       i.is_a? Event::NameChanged
     end.last
     obj.name if obj
   end
 
   def address
-    obj = history.dup.select do |i|
+    obj = history.select do |i|
       i.is_a? Event::AddressChanged
     end.last
     obj.address if obj
@@ -155,7 +155,7 @@ class BuildingPresenter
   end
 
   def area_ids
-    local_history = history.dup
+    local_history = history
     ids = local_history.select do |i|
       i.is_a? Building::Event::AreaAdded
     end.collect(&:area_id)
@@ -230,7 +230,7 @@ class AreaPresenter
   end
 
   def name
-    obj = history.dup.select do |i|
+    obj = history.select do |i|
       i.is_a? Area::Event::NameChanged
     end.last
     obj.name if obj
@@ -241,21 +241,21 @@ class AreaPresenter
   end
 
   def building_id
-    obj = history.dup.select do |i|
+    obj = history.select do |i|
       i.is_a? Area::Event::BuildingAssignment
     end.last
     obj.building_id if obj
   end
 
   def building_name
-    obj = building.history.dup.select do |i|
+    obj = building.history.select do |i|
       i.is_a? Building::Event::NameChanged
     end.last
     obj.name if obj
   end
 
   def area_type
-    obj = history.dup.select do |i|
+    obj = history.select do |i|
       i.is_a? Area::Event::TypeChanged
     end.last
     obj.type if obj

@@ -16,20 +16,32 @@ module Sequares
     end
 
     def each
+      return to_enum(:each) unless block_given?
+      cursor = 0
+      per_page = 1_000
       loop do
-        n = _next(1)
-        break if n.empty?
-        yield n.first
-      end
-    end
+        store_value = _mget(cursor, (cursor + per_page - 1)).collect do |event|
+          _load event
+        end
+        if store_value.empty?
+          from = (cursor - committed_length)
+          to = from + 1
+          range = Range.new(from, to)
+          store_value = Array(uncommitted.slice(range))
+        end
+        store_value
 
-    def each_page(per_page=1_000)
-      loop do
-        n = _next(per_page)
-        break if n.empty?
-        n.each { |i| yield i }
+        break if store_value.empty?
+
+        cursor += store_value.length
+
+        store_value.each do |event|
+          yield event
+        end
       end
+      self
     end
+    alias each_page each
 
     def length
       committed_length + uncommitted_length
