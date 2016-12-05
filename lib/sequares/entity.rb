@@ -9,7 +9,7 @@ module Sequares
         id = hashids.encode_hex(SecureRandom.hex)
       end
       @id = id
-      @history = HistoryPage.new(Redis.new, "lookups:#{cache_key}")
+      @history = HistoryPage.new(Sequares.repository.backend, "lookups:#{cache_key}")
     end
 
     class << self
