@@ -29,7 +29,6 @@ module Sequares
           range = Range.new(from, to)
           store_value = Array(uncommitted.slice(range))
         end
-        store_value
 
         break if store_value.empty?
 
