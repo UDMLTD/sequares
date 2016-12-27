@@ -47,11 +47,11 @@ module Sequares
     end
 
     def empty?
-      length == 0
+      length.zero?
     end
 
     def any?
-      length != 0
+      !empty?
     end
 
     def uncommitted_length
