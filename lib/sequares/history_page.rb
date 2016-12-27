@@ -50,10 +50,6 @@ module Sequares
       length.zero?
     end
 
-    def any?
-      !empty?
-    end
-
     def uncommitted_length
       @uncommitted.length
     end
