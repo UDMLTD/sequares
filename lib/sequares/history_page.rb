@@ -46,6 +46,14 @@ module Sequares
       committed_length + uncommitted_length
     end
 
+    def empty?
+      length == 0
+    end
+
+    def any?
+      length != 0
+    end
+
     def uncommitted_length
       @uncommitted.length
     end
