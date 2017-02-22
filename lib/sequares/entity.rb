@@ -4,10 +4,7 @@ module Sequares
     attr_accessor :id
     attr_reader :history
     def initialize(id=nil)
-      unless id
-        hashids = Hashids.new(Sequares.configuration.hashids_salt)
-        id = hashids.encode_hex(SecureRandom.hex)
-      end
+      id = ULID.generate unless id
       @id = id
       @history = HistoryPage.new(Sequares.repository.backend, "lookups:#{cache_key}")
     end

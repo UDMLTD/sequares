@@ -2,7 +2,7 @@ require "redis"
 require "delegate"
 require "time"
 require "forwardable"
-require "hashids"
+require "ulid"
 require "securerandom"
 
 require "active_support/inflector"
